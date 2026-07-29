@@ -123,9 +123,9 @@ def handleRoturAuth(*serve.Context c) (
 
     if isBannedUser(username) (
         string reason = banReasonFor(username)
-        string banError = "This account is banned from MistWarp."
+        string banError = "This account is banned from Bilup."
         if reason != "" (
-            banError = "This account is banned from MistWarp: " ++ reason
+            banError = "This account is banned from Bilup: " ++ reason
         )
         c.json(403, {ok: false, code: "banned", error: banError})
         return

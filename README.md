@@ -1,6 +1,6 @@
-# mistwarp-api
+# bilup-api
 
-OSL backend for MistWarp community, the MistWarp community platform. Rotur validator auth, flat JSON storage, Cloudflare R2 for project blobs, git.rotur.dev (Gitea) for repos, forks, and pull requests.
+OSL backend for Bilup community, the Bilup community platform. Rotur validator auth, flat JSON storage, Cloudflare R2 for project blobs, git.rotur.dev (Gitea) for repos, forks, and pull requests.
 
 ## Run
 

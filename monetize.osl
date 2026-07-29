@@ -189,7 +189,7 @@ def retryPendingPayouts() object (
     number paid = 0
     for i payouts.len (
         object p = payouts[i]
-        boolean ok = payoutTo(p.seller.toStr(), p.amount.toNum(), "MistWarp sale (retry)")
+        boolean ok = payoutTo(p.seller.toStr(), p.amount.toNum(), "Bilup sale (retry)")
         if ok (
             paid = paid + 1
         ) else (
@@ -491,7 +491,7 @@ def handlePurchaseConfirm(*serve.Context c) (
     if paywallFeePercent > 0 (
         sellerAmount = owed - (owed * paywallFeePercent / 100)
     )
-    boolean paidOut = payoutTo(seller, sellerAmount, "MistWarp sale")
+    boolean paidOut = payoutTo(seller, sellerAmount, "Bilup sale")
 
     keys.delete(key)
     store.keys = keys

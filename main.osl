@@ -301,5 +301,5 @@ api.GET("/admin/extensions/:hash/source", requireAdmin, handleAdminGetExtensionS
 api.POST("/admin/extensions/policy", requireAdmin, handleAdminSetExtensionPolicy)
 api.POST("/admin/extensions/url-policy", requireAdmin, handleAdminSetExtensionUrlPolicy)
 
-log "MistWarp API listening on " ++ appURL
+log "Bilup API listening on " ++ appURL
 app.serve(":" ++ port)

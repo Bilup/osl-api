@@ -187,7 +187,7 @@ def handleCreateProfileComment(*serve.Context c) (
     string name = c.param("name")
     string nameKey = normalizeUsername(name)
     if !isSafePathPart(nameKey) or !fs.exists(usersDir ++ nameKey ++ ".json") (
-        c.notFound("this user is not on MistWarp")
+        c.notFound("this user is not on Bilup")
         return
     )
     if profileCommentsOff(name) (

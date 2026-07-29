@@ -2,4 +2,4 @@
 set -e
 
 osl compile main.osl
-../../rotur_manager.sh start mistwarp-api
+../../rotur_manager.sh start bilup-api
