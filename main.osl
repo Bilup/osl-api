@@ -19,11 +19,11 @@ def dotenvValue(string name) string (
     if !fs.exists(".env") (
         return ""
     )
-    array lines = fs.readFile(".env").split("\n")
+    lines = fs.readFile(".env").split("\n")
     for i lines.len (
         string line = lines[i].toStr().strip()
         if line != "" and !line.startsWith("#") and line.contains("=") (
-            array parts = line.split("=")
+            parts = line.split("=")
             string key = parts[1].toStr().strip()
             if key == name (
                 string value = parts[2].toStr().strip()
@@ -100,7 +100,7 @@ string r2PublicBase = configValue("R2_PUBLIC_BASE", "")
 string giteaURL = configValue("GITEA_URL", "https://git.rotur.dev")
 string giteaAdminToken = configValue("GITEA_ADMIN_TOKEN", "")
 string editorOrigin = configValue("EDITOR_ORIGIN", "https://warp.mistium.com")
-array corsAllowedOrigins = configValue("CORS_ORIGINS", editorOrigin ++ ",http://localhost:8601,http://localhost:8602").split(",")
+corsAllowedOrigins = configValue("CORS_ORIGINS", editorOrigin ++ ",http://localhost:8601,http://localhost:8602").split(",")
 array adminUsers = configValue("ADMIN_USERS", "mist").toLower().split(",")
 string mistwarpRoturToken = configValue("MISTWARP_ROTUR_TOKEN", "")
 string mistwarpRoturUser = configValue("MISTWARP_ROTUR_USER", "")
