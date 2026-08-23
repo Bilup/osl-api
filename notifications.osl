@@ -11,6 +11,7 @@ def loadNotifications(string username) array (
     return data.items.assert(array)
 )
 
+
 def saveNotifications(string username, array items) boolean (
     string key = normalizeUsername(username)
     if !isSafePathPart(key) (
@@ -19,7 +20,335 @@ def saveNotifications(string username, array items) boolean (
     return writeFile(notificationsDir ++ key ++ ".json", {items: items})
 )
 
+
+def normalizeNotification(object item) object (
+    object out = {}
+    array keys = item.getKeys().toArray()
+    for i keys.len (
+        string key = keys[i].toStr()
+        out[key] = item[key]
+    )
+    if !out.contains("created") and out.contains("timestamp") and out.timestamp != null (
+        out.created = out.timestamp
+    )
+    if !out.contains("timestamp") and out.contains("created") and out.created != null (
+        out.timestamp = out.created
+    )
+    if !out.contains("read") (
+        out.read = false
+    )
+    if !out.contains("actor") and out.contains("from") (
+        out.actor = out.from
+    )
+    if !out.contains("platform") (
+        out.platform = "mistwarp"
+    )
+    if !out.contains("platform_data") (
+        out.platform_data = {}
+    )
+    object pd = {}
+    if typeof(out.platform_data) == "object" (
+        pd = out.platform_data
+    )
+    array pdKeys = pd.getKeys().toArray()
+    for i pdKeys.len (
+        string pk = pdKeys[i].toStr()
+        if !out.contains(pk) (
+            out[pk] = pd[pk]
+        )
+    )
+    if out.platform.toStr() == "mistwarp" and pd.contains("type") and pd.type.toStr() != "" (
+        out.type = pd.type.toStr()
+    )
+    if out.created == null (
+        out.created = 0
+    )
+    if out.timestamp == null (
+        out.timestamp = 0
+    )
+    if out.read != true (
+        out.read = false
+    )
+    return out
+)
+
+
+def sanitizeNotificationPayload(object payload, string notifType, string actor) object (
+    object data = {}
+    if payload == null or typeof(payload) != "object" (
+        return data
+    )
+    array keys = payload.getKeys().toArray()
+    for i keys.len (
+        string key = keys[i].toStr()
+        data[key] = payload[key]
+    )
+    if !data.contains("type") (
+        data.type = notifType
+    )
+    if !data.contains("actor") and actor != "" (
+        data.actor = actor
+    )
+    return data
+)
+
+
+def mergeNotificationArrays(array primary, array secondary) array (
+    array merged = []
+    object seen = {}
+    for i primary.len (
+        object item = primary[i].assert(object)
+        string id = ""
+        if item.contains("id") and item.id != null (
+            id = item.id.toStr()
+        )
+        if id != "" and seen[id] == true (
+            continue
+        )
+        seen[id] = true
+        merged.append(normalizeNotification(item))
+    )
+    for i secondary.len (
+        object item = secondary[i].assert(object)
+        string id = ""
+        if item.contains("id") and item.id != null (
+            id = item.id.toStr()
+        )
+        if id != "" and seen[id] == true (
+            continue
+        )
+        seen[id] = true
+        merged.append(normalizeNotification(item))
+    )
+    return merged
+)
+
+
+def notificationBody(string actor, string notifType, object extra) string (
+    string projectTitle = ""
+    if extra.contains("projectTitle") (
+        projectTitle = extra.projectTitle.toStr()
+    )
+    string projectLink = ""
+    if extra.contains("projectId") and extra.projectId != null (
+        projectLink = editorOrigin ++ "/project/" ++ extra.projectId.toStr()
+    )
+    if notifType == "love" (
+        if projectTitle != "" (
+            return actor ++ " loved " ++ projectTitle ++ ": " ++ projectLink
+        )
+        if projectLink != "" (
+            return actor ++ " loved your project: " ++ projectLink
+        )
+        return actor ++ " loved your project"
+    )
+    if notifType == "comment" (
+        if projectTitle != "" (
+            return actor ++ " commented on " ++ projectTitle ++ ": " ++ projectLink
+        )
+        if projectLink != "" (
+            return actor ++ " commented on your project: " ++ projectLink
+        )
+        return actor ++ " commented on your project"
+    )
+    if notifType == "profile_comment" (
+        return actor ++ " commented on your profile"
+    )
+    if notifType == "roadmap_comment" (
+        string roadmapTitle = "your roadmap suggestion"
+        if extra.contains("roadmapTitle") (
+            roadmapTitle = extra.roadmapTitle.toStr()
+        )
+        string roadmapLink = editorOrigin ++ "/roadmap"
+        if extra.contains("roadmapId") (
+            roadmapLink = roadmapLink ++ "#idea-" ++ extra.roadmapId.toStr()
+        )
+        return actor ++ " commented on " ++ roadmapTitle ++ ": " ++ roadmapLink
+    )
+    if notifType == "reply" (
+        if projectLink != "" (
+            return actor ++ " replied to your comment: " ++ projectLink
+        )
+        return actor ++ " replied to your comment"
+    )
+    if notifType == "mention" (
+        if projectTitle != "" (
+            return actor ++ " mentioned you on " ++ projectTitle ++ ": " ++ projectLink
+        )
+        if projectLink != "" (
+            return actor ++ " mentioned you in a comment: " ++ projectLink
+        )
+        return actor ++ " mentioned you in a comment"
+    )
+    if notifType == "follow" (
+        return actor ++ " followed you"
+    )
+    if notifType == "remix" (
+        if projectTitle != "" (
+            return actor ++ " remixed " ++ projectTitle ++ ": " ++ projectLink
+        )
+        if projectLink != "" (
+            return actor ++ " remixed your project: " ++ projectLink
+        )
+        return actor ++ " remixed your project"
+    )
+    if notifType == "purchase" (
+        if projectTitle != "" (
+            return actor ++ " bought " ++ projectTitle ++ ": " ++ projectLink
+        )
+        if projectLink != "" (
+            return actor ++ " bought your project: " ++ projectLink
+        )
+        return actor ++ " bought your project"
+    )
+    if notifType == "donation" (
+        return actor ++ " donated credits to you"
+    )
+    if notifType == "standing" (
+        string level = "changed"
+        if extra.contains("level") (
+            level = extra.level.toStr()
+        )
+        string reason = ""
+        if extra.contains("reason") (
+            reason = extra.reason.toStr()
+        )
+        if reason != "" (
+            return "Your account standing is now " ++ level ++ ": " ++ reason
+        )
+        return "Your account standing is now " ++ level
+    )
+    if notifType == "moderation" (
+        if extra.contains("message") (
+            return extra.message.toStr()
+        )
+        return "A moderator sent you a message"
+    )
+    if notifType == "news" (
+        if extra.contains("title") (
+            return extra.title.toStr()
+        )
+        return "New announcement"
+    )
+    if notifType == "report_update" (
+        return "Your report was reviewed"
+    )
+    if notifType == "space_project" (
+        return actor ++ " added a project to " ++ extra.spaceTitle.toStr()
+    )
+    if notifType == "space_comment" (
+        return actor ++ " commented on " ++ extra.spaceTitle.toStr()
+    )
+    if notifType == "space_curator_invite" (
+        return actor ++ " invited you to curate " ++ extra.spaceTitle.toStr()
+    )
+    if notifType == "space_curator_accepted" (
+        return actor ++ " accepted your invitation to curate " ++ extra.spaceTitle.toStr()
+    )
+    if notifType == "space_curator_declined" (
+        return actor ++ " declined your invitation to curate " ++ extra.spaceTitle.toStr()
+    )
+    if notifType == "space_curator_removed" (
+        return actor ++ " removed you as a curator of " ++ extra.spaceTitle.toStr()
+    )
+    if notifType == "contribution" (
+        return actor ++ " sent changes for " ++ projectTitle ++ ": " ++ projectLink
+    )
+    if notifType == "project_feedback" (
+        return actor ++ " sent " ++ extra.feedbackType.toStr() ++ " feedback for " ++ projectTitle ++ ": " ++ projectLink
+    )
+    if notifType == "project_review" (
+        return actor ++ " rated " ++ projectTitle ++ " " ++ extra.rating.toStr() ++ " out of 5: " ++ projectLink
+    )
+    return actor ++ " sent you a notification"
+)
+
+
+def notifyRequestBody(string target, string actor, string notifType, object extra) object (
+    object data = {}
+    if extra != null and typeof(extra) == "object" (
+        array keys = extra.getKeys().toArray()
+        for i keys.len (
+            string key = keys[i].toStr()
+            data[key] = extra[key]
+        )
+    )
+    data.from = actor
+    return {
+        source: "mistwarp",
+        title: actor,
+        body: notificationBody(actor, notifType, extra),
+        data: data,
+        users: [target]
+    }
+)
+
+
+def notifyHeaders() object (
+    return {
+        "Authorization": "Bearer " ++ mistwarpRoturToken,
+        "Content-Type": "application/json"
+    }
+)
+
+
+def postRoturNotification(string target, string actor, string notifType, object extra) boolean (
+    if mistwarpRoturToken == "" (
+        return false
+    )
+    object resp = requests.post(roturBase ++ "/v2/notify/", {
+        headers: notifyHeaders(),
+        body: json.stringify(notifyRequestBody(target, actor, notifType, extra))
+    })
+    return resp.success and resp.status.toInt() == 200
+)
+
+
+def markRoturNotificationsRead() boolean (
+    if mistwarpRoturToken == "" (
+        return false
+    )
+    object resp = requests.post(roturBase ++ "/v2/notifications/read", {
+        headers: notifyHeaders(),
+        body: "{}"
+    })
+    return resp.success and resp.status.toInt() == 200
+)
+
+
+def fetchRoturNotifications() object (
+    if mistwarpRoturToken == "" (
+        return {
+            ok: false,
+            notifications: []
+        }
+    )
+
+    object resp = requests.get(roturBase ++ "/v2/notifications", {headers: notifyHeaders()})
+    if !resp.success or resp.status.toInt() != 200 (
+        return {ok: false, notifications: []}
+    )
+
+    auto parsed = json.parse(resp.body, {type: "array"})
+    if parsed.isErr() (
+        return {ok: false, notifications: []}
+    )
+
+    array remote = []
+    array list = parsed.unwrap().assert(array)
+    for i list.len (
+        auto item = list[i]
+        if typeof(item) != "object" (
+            continue
+        )
+        remote.append(normalizeNotification(item.assert(object)))
+    )
+    return {ok: true, notifications: remote}
+)
+
+
 def addNotification(string target, string actor, string notifType, object extra) (
+    object payload = sanitizeNotificationPayload(extra, notifType, actor)
     string targetKey = normalizeUsername(target)
     if targetKey == "" or targetKey == normalizeUsername(actor) (
         return
@@ -30,12 +359,13 @@ def addNotification(string target, string actor, string notifType, object extra)
         type: notifType,
         actor: actor,
         created: timestamp,
+        platform: "mistwarp",
+        platform_data: payload,
         read: false
     }
-    array extraKeys = extra.getKeys().toArray()
-    for i extraKeys.len (
-        string k = extraKeys[i].toStr()
-        item[k] = extra[k]
+
+    if postRoturNotification(targetKey, actor, notifType, payload) (
+        return
     )
 
     array items = loadNotifications(targetKey)
@@ -44,16 +374,21 @@ def addNotification(string target, string actor, string notifType, object extra)
     for i items.len (
         object existing = items[i]
         boolean same = existing.type.toStr() == notifType and normalizeUsername(existing.actor.toStr()) == normalizeUsername(actor)
-        for j extraKeys.len (
-            string k = extraKeys[j].toStr()
-            if !existing.contains(k) or existing[k] != extra[k] (
+        object existingPd = {}
+        if typeof(existing.platform_data) == "object" (
+            existingPd = existing.platform_data
+        )
+        array payloadKeys = payload.getKeys().toArray()
+        for j payloadKeys.len (
+            string k = payloadKeys[j].toStr()
+            if !existingPd.contains(k) or existingPd[k] != payload[k] (
                 same = false
             )
         )
-        if same and existing.read != true (
-            return
+        if same (
+            continue
         )
-        if !same and kept < 50 (
+        if kept < 50 (
             next.append(existing)
             kept = kept + 1
         )
@@ -61,13 +396,20 @@ def addNotification(string target, string actor, string notifType, object extra)
     saveNotifications(targetKey, next)
 )
 
+
 def handleGetNotifications(*serve.Context c) (
     string username = c.getString("username")
-    c.json(200, {ok: true, notifications: loadNotifications(username)})
+    object remote = fetchRoturNotifications()
+    array remoteList = remote.notifications.assert(array)
+    array local = loadNotifications(username)
+    c.json(200, {ok: true, notifications: mergeNotificationArrays(remoteList, local)})
 )
+
 
 def handleReadNotifications(*serve.Context c) (
     string username = c.getString("username")
+    markRoturNotificationsRead()
+
     array items = loadNotifications(username)
     for i items.len (
         object item = items[i]
