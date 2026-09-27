@@ -1,5 +1,8 @@
 # bilup-api
 
+> [!WARNING]
+> This repository is archived due to com.bilup.org 's community part is now down. Sorry for the inconvenice.
+
 OSL backend for Bilup community, the Bilup community platform. Rotur validator auth, flat JSON storage, Cloudflare R2 for project blobs, git.rotur.dev (Gitea) for repos, forks, and pull requests.
 
 ## Run
